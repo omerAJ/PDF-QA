@@ -24,5 +24,6 @@ def create_agent() -> object:
         checkpointer=checkpointer,
         prompt=SYSTEM_PROMPT,
         debug=False,
+        tools=[]
     )
     return agent
