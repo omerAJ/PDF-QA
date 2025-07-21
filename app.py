@@ -31,6 +31,10 @@ if uploaded_files:
             pdf_text += page.extract_text() or ""
     st.session_state["pdf_text"] = pdf_text
 
+    # Show PDF content in an expander
+    with st.expander("Show extracted PDF content"):
+        st.text_area("PDF Content", pdf_text, height=300)
+
 # Initialize chat history
 if "history" not in st.session_state:
     st.session_state.history = []
