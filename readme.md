@@ -2,12 +2,15 @@
 
 This project is a Streamlit-based web application that allows users to upload PDF documents and ask questions about their content. The chatbot answers strictly based on the information found in the uploaded PDFs.
 
-**Note:** This app works for text-based PDFs only, using [PyPDF2](https://pypi.org/project/PyPDF2/) for text extraction. Scanned/image-based PDFs are not supported.
+**Note:**  
+- For **text-based PDFs**, the app uses [PyPDF2](https://pypi.org/project/PyPDF2/) for text extraction.  
+- For **scanned/image-based PDFs**, the app uploads the files to OpenAI and uses file IDs for LLM-based understanding.
 
 ## Features
 
-- Upload one or more text-based PDF files.
-- Extracts and displays the text content from PDFs.
+- Upload one or more PDF files (text-based or scanned).
+- Extracts and displays the text content from text-based PDFs.
+- For scanned PDFs, sends files directly to the LLM for analysis.
 - Ask questions in a chat interface.
 - Answers are generated using an LLM (OpenAI GPT) and are strictly based on the uploaded PDFs.
 - Dummy agent fallback for development without an API key.
@@ -27,7 +30,7 @@ You can deploy this app for free using [Streamlit Community Cloud](https://strea
 3. Click "New app", select your repo and branch, and set `app.py` as the main file.
 4. Add your `OPENAI_API_KEY` as a secret in the app's settings (if needed).
 
-No local installation is required!
+No local installation is required!  
 **Benefit:** You can quickly share your app with others for testing or to let them take it for a spin—just send them your app link!  
 *Note: Apps on Streamlit Community Cloud may go to sleep if not used for a while, but they will automatically wake up when visited again.*
 
@@ -65,9 +68,12 @@ The app will be available at [http://localhost:8501](http://localhost:8501).
 ## Usage
 
 1. Upload one or more PDF files using the uploader.
-2. View the extracted PDF content (optional).
-3. Ask questions in the chat input box.
-4. The chatbot will answer based only on the content of the uploaded PDFs.
+2. Select the PDF type:  
+   - **Text-based PDF**: Extracts and displays text content for Q&A.  
+   - **Scanned PDF**: Sends the PDF(s) directly to the LLM for analysis.
+3. View the extracted PDF content (optional).
+4. Ask questions in the chat input box.
+5. The chatbot will answer based only on the content of the uploaded PDFs.
 
 ## Development
 
@@ -86,4 +92,4 @@ MIT License
 
 ---
 
-*This project uses [LangChain](https://github.com/langchain-ai/langchain), [LangGraph](https://github.com/langchain-ai/langgraph), [Streamlit](https://streamlit.io/), and [PyPDF2](https://pypi.org/project/PyPDF2/)
+*This project uses [LangChain](https://github.com/langchain-ai/langchain), [LangGraph](https://github.com/langchain-ai/langgraph), [Streamlit](https://streamlit.io/)
