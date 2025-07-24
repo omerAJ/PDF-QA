@@ -4,6 +4,7 @@ from langchain.schema import HumanMessage, AIMessage
 from agent_factory import create_agent, SYSTEM_PROMPT
 import PyPDF2
 import os
+import openai
 
 st.title("General PDF Q&A Chatbot")
 st.markdown("""
@@ -53,20 +54,57 @@ if uploaded_files:
                     return {"messages": [AIMessage(content="(Dummy agent: No API key set)\n\n" + debug_prompt)]}
             st.session_state["agent"] = DummyAgent()
     else:
-        # Scanned PDF: feed the PDF file(s) directly to the agent
+        # Scanned PDF: upload to OpenAI Files API
         st.info("Scanned PDF selected. The PDF(s) will be sent directly to the LLM for understanding.")
-        # Show file names
         with st.expander("Show uploaded PDF files"):
             st.write([f.name for f in uploaded_files])
+
+        # Upload PDFs to OpenAI and store file_ids
+        file_ids = []
+        if os.environ.get("OPENAI_API_KEY"):
+            openai.api_key = os.environ["OPENAI_API_KEY"]
+            for pdf_file in uploaded_files:
+                # Save to a temp file because openai.Files.create needs a file path
+                with open(pdf_file.name, "wb") as temp_out:
+                    temp_out.write(pdf_file.read())
+                file_obj = openai.files.create(
+                    file=open(pdf_file.name, "rb"),
+                    purpose="user_data"
+                )
+                file_ids.append(file_obj.id)
+            st.session_state["file_ids"] = file_ids
+        else:
+            st.session_state["file_ids"] = []
 
         # Show the system prompt for debugging (context is file list)
         debug_prompt = SYSTEM_PROMPT.format(context="PDF(s) attached: " + ", ".join([f.name for f in uploaded_files]))
         with st.expander("Show system prompt (debug)"):
             st.text_area("System Prompt", debug_prompt, height=200)
 
-        # Create and store agent with PDF files as context
+        # Create and store agent with file_ids as context
         if os.environ.get("OPENAI_API_KEY"):
-            st.session_state["agent"] = create_agent(context=uploaded_files)
+            class ScannedPDFAgent:
+                def invoke(self, *args, **kwargs):
+                    messages = args[0].get("messages", [])
+                    user_question = ""
+                    for m in messages[::-1]:
+                        if isinstance(m, HumanMessage):
+                            user_question = m.content
+                            break
+                    # Use the first file_id for demo; extend as needed
+                    file_ids = st.session_state.get("file_ids", [])
+                    if not file_ids:
+                        return {"messages": [AIMessage(content="No file uploaded to OpenAI.")]}
+
+                    resp = openai.responses.create(
+                        model="gpt-4.1-nano",
+                        input=[
+                            {"type": "input_file", "file_id": file_ids[0]},
+                            {"type": "input_text", "text": user_question}
+                        ]
+                    )
+                    return {"messages": [AIMessage(content=resp.choices[0].message.content)]}
+            st.session_state["agent"] = ScannedPDFAgent()
         else:
             class DummyAgent:
                 def invoke(self, *args, **kwargs):
