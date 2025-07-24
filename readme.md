@@ -28,6 +28,8 @@ You can deploy this app for free using [Streamlit Community Cloud](https://strea
 4. Add your `OPENAI_API_KEY` as a secret in the app's settings (if needed).
 
 No local installation is required!
+**Benefit:** You can quickly share your app with others for testing or to let them take it for a spin—just send them your app link!  
+*Note: Apps on Streamlit Community Cloud may go to sleep if not used for a while, but they will automatically wake up when visited again.*
 
 ### Running Locally
 
