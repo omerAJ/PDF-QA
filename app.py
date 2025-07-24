@@ -10,6 +10,13 @@ st.markdown("""
 Welcome! Upload any PDF documents and ask questions about their content.
 """)
 
+# PDF type selection
+pdf_type = st.radio(
+    "Select PDF type:",
+    ("Text-based PDF", "Scanned PDF (images, not selectable text)"),
+    index=0
+)
+
 # PDF upload
 uploaded_files = st.file_uploader(
     "Upload PDFs", type=["pdf"], accept_multiple_files=True
@@ -18,31 +25,53 @@ pdf_text = ""
 if uploaded_files:
     st.session_state["pdfs"] = uploaded_files
     st.success(f"{len(uploaded_files)} PDF(s) uploaded.")
-    # Extract text from all uploaded PDFs
-    for pdf_file in uploaded_files:
-        reader = PyPDF2.PdfReader(pdf_file)
-        for page in reader.pages:
-            pdf_text += page.extract_text() or ""
-    st.session_state["pdf_text"] = pdf_text
 
-    # Show PDF content in an expander
-    with st.expander("Show extracted PDF content"):
-        st.text_area("PDF Content", pdf_text, height=300)
+    if pdf_type == "Text-based PDF":
+        # Extract text from all uploaded PDFs
+        for pdf_file in uploaded_files:
+            reader = PyPDF2.PdfReader(pdf_file)
+            for page in reader.pages:
+                pdf_text += page.extract_text() or ""
+        st.session_state["pdf_text"] = pdf_text
 
-    # Show the system prompt for debugging
-    debug_prompt = SYSTEM_PROMPT.format(context=pdf_text)
-    with st.expander("Show system prompt (debug)"):
-        st.text_area("System Prompt", debug_prompt, height=200)
+        # Show PDF content in an expander
+        with st.expander("Show extracted PDF content"):
+            st.text_area("PDF Content", pdf_text, height=300)
 
-    # Create and store agent with current context
-    if os.environ.get("OPENAI_API_KEY"):
-        st.session_state["agent"] = create_agent(context=pdf_text)
+        # Show the system prompt for debugging
+        debug_prompt = SYSTEM_PROMPT.format(context=pdf_text)
+        with st.expander("Show system prompt (debug)"):
+            st.text_area("System Prompt", debug_prompt, height=200)
+
+        # Create and store agent with current context
+        if os.environ.get("OPENAI_API_KEY"):
+            st.session_state["agent"] = create_agent(context=pdf_text)
+        else:
+            # Dummy agent for testing without API key
+            class DummyAgent:
+                def invoke(self, *args, **kwargs):
+                    return {"messages": [AIMessage(content="(Dummy agent: No API key set)\n\n" + debug_prompt)]}
+            st.session_state["agent"] = DummyAgent()
     else:
-        # Dummy agent for testing without API key
-        class DummyAgent:
-            def invoke(self, *args, **kwargs):
-                return {"messages": [AIMessage(content="(Dummy agent: No API key set)\n\n" + debug_prompt)]}
-        st.session_state["agent"] = DummyAgent()
+        # Scanned PDF: feed the PDF file(s) directly to the agent
+        st.info("Scanned PDF selected. The PDF(s) will be sent directly to the LLM for understanding.")
+        # Show file names
+        with st.expander("Show uploaded PDF files"):
+            st.write([f.name for f in uploaded_files])
+
+        # Show the system prompt for debugging (context is file list)
+        debug_prompt = SYSTEM_PROMPT.format(context="PDF(s) attached: " + ", ".join([f.name for f in uploaded_files]))
+        with st.expander("Show system prompt (debug)"):
+            st.text_area("System Prompt", debug_prompt, height=200)
+
+        # Create and store agent with PDF files as context
+        if os.environ.get("OPENAI_API_KEY"):
+            st.session_state["agent"] = create_agent(context=uploaded_files)
+        else:
+            class DummyAgent:
+                def invoke(self, *args, **kwargs):
+                    return {"messages": [AIMessage(content="(Dummy agent: No API key set)\n\n" + debug_prompt)]}
+            st.session_state["agent"] = DummyAgent()
 elif "agent" not in st.session_state:
     # No PDFs uploaded yet, create agent with empty context
     if os.environ.get("OPENAI_API_KEY"):
