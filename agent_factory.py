@@ -6,10 +6,10 @@ from langgraph.checkpoint.memory import InMemorySaver
 
 SYSTEM_PROMPT = """
 You are a helpful assistant that answers questions strictly based on the provided PDF.
-Use only the information from the following PDF content:
-{context}
 If the answer is not present in the PDFs, reply: "Sorry, I can't find that information in the provided documents."
 Do not make up information or provide advice beyond what is contained in the PDFs.
+Use only the information from the following PDF content:
+{context}
 """
 
 def create_agent(context="") -> object:

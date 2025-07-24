@@ -5,14 +5,14 @@ from agent_factory import create_agent, SYSTEM_PROMPT
 import PyPDF2
 import os
 
-st.title("Rent Agreement Q&A Chatbot")
+st.title("General PDF Q&A Chatbot")
 st.markdown("""
-Welcome! Upload your rent agreement PDFs and ask any questions about them.
+Welcome! Upload any PDF documents and ask questions about their content.
 """)
 
 # PDF upload
 uploaded_files = st.file_uploader(
-    "Upload rent agreement PDFs", type=["pdf"], accept_multiple_files=True
+    "Upload PDFs", type=["pdf"], accept_multiple_files=True
 )
 pdf_text = ""
 if uploaded_files:
