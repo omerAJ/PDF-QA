@@ -1,15 +1,9 @@
 # app.py
 import streamlit as st
 from langchain.schema import HumanMessage, AIMessage
-from agent_factory import create_agent
+from agent_factory import create_agent, SYSTEM_PROMPT
 import PyPDF2
-
-# Initialize agent once
-# @st.cache_resource
-def get_agent():
-    return create_agent()
-
-agent = get_agent()
+import os
 
 st.title("Rent Agreement Q&A Chatbot")
 st.markdown("""
@@ -34,6 +28,33 @@ if uploaded_files:
     # Show PDF content in an expander
     with st.expander("Show extracted PDF content"):
         st.text_area("PDF Content", pdf_text, height=300)
+
+    # Show the system prompt for debugging
+    debug_prompt = SYSTEM_PROMPT.format(context=pdf_text)
+    with st.expander("Show system prompt (debug)"):
+        st.text_area("System Prompt", debug_prompt, height=200)
+
+    # Create and store agent with current context
+    if os.environ.get("OPENAI_API_KEY"):
+        st.session_state["agent"] = create_agent(context=pdf_text)
+    else:
+        # Dummy agent for testing without API key
+        class DummyAgent:
+            def invoke(self, *args, **kwargs):
+                return {"messages": [AIMessage(content="(Dummy agent: No API key set)\n\n" + debug_prompt)]}
+        st.session_state["agent"] = DummyAgent()
+elif "agent" not in st.session_state:
+    # No PDFs uploaded yet, create agent with empty context
+    if os.environ.get("OPENAI_API_KEY"):
+        st.session_state["agent"] = create_agent(context="")
+    else:
+        class DummyAgent:
+            def invoke(self, *args, **kwargs):
+                prompt = SYSTEM_PROMPT.format(context="")
+                return {"messages": [AIMessage(content="(Dummy agent: No API key set)\n\n" + prompt)]}
+        st.session_state["agent"] = DummyAgent()
+
+agent = st.session_state["agent"]
 
 # Initialize chat history
 if "history" not in st.session_state:
@@ -61,10 +82,8 @@ if prompt := st.chat_input("Your message"):
                 messages.append(AIMessage(content=text))
         messages.append(HumanMessage(content=prompt))
 
-        # Pass PDF text as context to the agent
-        context = st.session_state.get("pdf_text", "")
         resp = agent.invoke(
-                {"messages": messages, "context": context},
+                {"messages": messages},
                 config={"configurable": {"thread_id": "user_thread"}}
             )
         # Extract the final AIMessage text
