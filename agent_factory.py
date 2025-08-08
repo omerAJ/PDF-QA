@@ -15,7 +15,7 @@ Use only the information from the following PDF content:
 def create_agent(context="") -> object:
     llm = ChatOpenAI(
         openai_api_key=os.environ["OPENAI_API_KEY"],
-        model_name="gpt-4.1-nano",
+        model_name="gpt-4.1",
         temperature=0.0
     )
     checkpointer = InMemorySaver()
